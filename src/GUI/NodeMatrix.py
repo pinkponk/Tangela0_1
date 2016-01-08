@@ -1,17 +1,69 @@
 #!/usr/bin/env python
+import numpy as np
 
-
-class SpiderNode:
-    # '''Class variable used to identify a node'''
-    # '''Increments by one for each node created'''
-    # nextNodeId = 0
-    # input: index : {x: int, y: int} (index in node)
-    x = 0
-    y = 1
+#SpiderWebb is a NodeXCount * NodeYCount * 4 matrix 
+#Each node has a connection to right up, right, right down, down ( 3 connections).
+class SpiderWebb:
+    rightup = 0;
+    right = 1;
+    rightdown = 2;
+    down = 3;
     
     
-    def __init__(self, index):
-        self.index = { 'x' : index['x'], 'y' : index['y']}
-        self.neighbours = []
+    def __init__(self, NodeXCount, NodeYCount):
+        self.NodeXCount = NodeXCount;
+        self.NodeYCount = NodeYCount;
+        self.Webb = np.zeros((NodeXCount, NodeYCount, 4));
         
-    
+    #InsertsThread
+    #input:
+    #     StartPos = {'x': 3, 'y': 4}
+    #     EndPos = {'x': 4, 'y': 5}
+    def InsertSpiderThread(self, StartPos, EndPos):
+        Xlength = abs(EndPos['x'] - StartPos['x'])
+        Ylength = abs(EndPos['y'] - StartPos['y'])
+        if (Xlength > 1 or Ylength > 1 or (Xlength == 0 and Ylength == 0)):
+            raise ValueError('Invalid node connection. Xlength: ' + str(Xlength) + ", Ylength: " + str(Ylength));
+        elif (StartPos['x'] < 0 or StartPos['x'] > (self.NodeXCount-1)):
+            raise ValueError('Index out of bound. StartPos[''x'']: ' + StartPos['x']);
+        elif (StartPos['y'] < 0 or StartPos['y'] > (self.NodeYCount-1)):
+            raise ValueError('Index out of bound. StartPos[''y'']: ' + StartPos['y']);
+        elif (EndPos['x'] < 0 or EndPos['x'] > (self.NodeXCount-1)):
+            raise ValueError('Index out of bound. EndPos[''x'']: ' + EndPos['x']);
+        elif (EndPos['y'] < 0 or EndPos['y'] > (self.NodeYCount-1)):
+            raise ValueError('Index out of bound. StartPos[''x'']: ' + StartPos['x']);
+        else: ## ALL OK
+            self.__insert_spider_thread(StartPos, EndPos);
+         
+          # self.Webb
+          
+    def __insert_spider_thread(self, StartPos, EndPos):
+        x_dir = EndPos['x'] - StartPos['x'];
+        y_dir = EndPos['y'] - StartPos['y'];
+        if(x_dir > 0):
+            if(y_dir < 0):
+                self.Webb[StartPos['x']][StartPos['y']][SpiderWebb.rightup] = 1;
+            elif(y_dir == 0):
+                self.Webb[StartPos['x']][StartPos['y']][SpiderWebb.right] = 1;
+            else:
+                self.Webb[StartPos['x']][StartPos['y']][SpiderWebb.rightdown] = 1;
+        elif(x_dir == 0):
+            if(y_dir < 0):
+                self.Webb[EndPos['x']][EndPos['y']][SpiderWebb.down] = 1;
+            elif(y_dir == 0):
+                raise ValueError('Same index of nodes.');
+            else:
+                self.Webb[StartPos['x']][StartPos['y']][SpiderWebb.down] = 1;
+        else:
+            if(y_dir < 0):
+                self.Webb[EndPos['x']][EndPos['y']][SpiderWebb.rightdown] = 1;
+            elif(y_dir == 0):
+                self.Webb[EndPos['x']][EndPos['y']][SpiderWebb.right] = 1;
+            else:
+                self.Webb[EndPos['x']][EndPos['y']][SpiderWebb.rightup] = 1;
+
+Webb = SpiderWebb(100, 100)
+Webb.Webb[0][0][0] = 3
+print (Webb.Webb[99][0][0])
+Webb.InsertSpiderThread({'x':1, 'y':1}, {'x':1, 'y':2})
+Webb.InsertSpiderThread({'x':1, 'y':1}, {'x':1, 'y':0})
