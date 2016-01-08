@@ -4,7 +4,7 @@ Created on 8 jan. 2016
 @author: Henrik
 '''
 
-class MyClass(object):
+class Spider(object):
     '''
     classdocs
     '''

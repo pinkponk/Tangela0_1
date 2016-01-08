@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 import numpy as np
 
+'''
+Created on 8 jan. 2016
+
+@author: Gustav
+'''
+
 #SpiderWebb is a NodeXCount * NodeYCount * 4 matrix 
 #Each node has a connection to right up, right, right down, down ( 3 connections).
 class SpiderWebb:
@@ -62,8 +68,20 @@ class SpiderWebb:
             else:
                 self.Webb[EndPos['x']][EndPos['y']][SpiderWebb.rightup] = 1;
 
-Webb = SpiderWebb(100, 100)
-Webb.Webb[0][0][0] = 3
-print (Webb.Webb[99][0][0])
+    def ConvertWebbToList(self):
+        WebbList = [];
+        for yrow in self.Webb:
+            for connections in yrow:
+                for connection in connections:
+                    WebbList.append(connection)
+        return WebbList;
+        #print (np.asarray(self.Webb))
+    
+                
+Webb = SpiderWebb(5, 5)
+# Webb.Webb[0][0][0] = 3
+# print (Webb.Webb[99][0][0])
 Webb.InsertSpiderThread({'x':1, 'y':1}, {'x':1, 'y':2})
 Webb.InsertSpiderThread({'x':1, 'y':1}, {'x':1, 'y':0})
+#print (Webb.Webb)
+Webb.ConvertWebbToList();
