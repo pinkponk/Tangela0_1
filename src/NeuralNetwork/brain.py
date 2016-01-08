@@ -109,24 +109,24 @@ class spiderBrainFullyCon(object):
             percept = random.choice(self.allLayers[0])
             
             if random.randrange(0,2,1) == 1:
-                percept.k = [percept.k*random.randrange(-1,2,2)*procentHowMuch]
+                percept.k = [percept.k[0]+percept.k[0]*random.randrange(-1,2,2)*procentHowMuch]
             else:
-                percept.b = percept.b*random.randrange(-1,2,2)*procentHowMuch
+                percept.b = percept.b+percept.b*random.randrange(-1,2,2)*procentHowMuch
             
         
         for layerIndex in range(1,self.layerStruct.__len__()):
             for times in range(0,math.ceil((1+self.layerStruct[layerIndex-1])*self.layerStruct[layerIndex]*procentHowMany)):
                 index = random.randrange(0,(1+self.layerStruct[layerIndex-1]),1)
+                percept = random.choice(self.allLayers[layerIndex])
                 if index == 0:
-                    percept.b = percept.b*random.randrange(-1,2,2)*procentHowMuch
+                    percept.b = percept.b+percept.b*random.randrange(-1,2,2)*procentHowMuch
                 else:
-                    
-                    percept.k = percept.k[index-1]*random.randrange(-1,2,2)*procentHowMuch
+                    percept.k[index-1] = percept.k[index-1]+percept.k[index-1]*random.randrange(-1,2,2)*procentHowMuch
         
         
     def visualizeActivation(self):
         d = 0
-        
+        uhcouevh = 0
         
         
         
