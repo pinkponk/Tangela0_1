@@ -5,6 +5,7 @@ Created on 30 dec. 2015
 '''
 import math
 import random
+import copy
 
 class spiderBrainFullyCon(object):
     '''
@@ -95,11 +96,33 @@ class spiderBrainFullyCon(object):
         
     def copyBrainWeights(self,allLayersToCopyFrom):
         #Children
-        a = 0
+        self.allLayers=copy.deepcopy(allLayersToCopyFrom)
         
-    def randomizeSomeWeights(self):
+    def randomizeSomeWeights(self,procentHowMany,procentHowMuch):
         #Mutation
-        d = 0
+        totalNrWeights = self.layerStruct[0]*2
+        for layerIndex in range(1,self.layerStruct.__len__()):
+            totalNrWeights=totalNrWeights+self.layerStruct[layerIndex-1]*self.layerStruct[layerIndex]
+        
+        
+        for times in range(0,math.ceil(self.layerStruct[layerIndex]*2*procentHowMany)):
+            percept = random.choice(self.allLayers[0])
+            
+            if random.randrange(0,2,1) == 1:
+                percept.k = [percept.k*random.randrange(-1,2,2)*procentHowMuch]
+            else:
+                percept.b = percept.b*random.randrange(-1,2,2)*procentHowMuch
+            
+        
+        for layerIndex in range(1,self.layerStruct.__len__()):
+            for times in range(0,math.ceil((1+self.layerStruct[layerIndex-1])*self.layerStruct[layerIndex]*procentHowMany)):
+                index = random.randrange(0,(1+self.layerStruct[layerIndex-1]),1)
+                if index == 0:
+                    percept.b = percept.b*random.randrange(-1,2,2)*procentHowMuch
+                else:
+                    
+                    percept.k = percept.k[index-1]*random.randrange(-1,2,2)*procentHowMuch
+        
         
     def visualizeActivation(self):
         d = 0
