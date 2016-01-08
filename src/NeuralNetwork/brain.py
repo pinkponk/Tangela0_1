@@ -126,7 +126,7 @@ class spiderBrainFullyCon(object):
         
     def visualizeActivation(self):
         d = 0
-        
+        uhcouevh = 0
         
         
         
