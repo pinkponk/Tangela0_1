@@ -4,7 +4,11 @@ import tkinter as Tk
 from tkinter import Canvas
 # from tkinter import Tk, Canvas, PhotoImage, mainloop, Frame
 
-SCREEN_DIMENSION = 200;
+SCREEN_DIMENSION = 700;
+AspecRatio = 16/9
+SCREEN_Height = round(SCREEN_DIMENSION)
+SCREEN_Width = round(AspecRatio*SCREEN_DIMENSION)
+
 
 
 class GraphicWindow(Tk.Frame):
@@ -15,16 +19,18 @@ class GraphicWindow(Tk.Frame):
         
     def start(self):
         self.master.title("My Do-Nothing Application")
-        self.master.maxsize(SCREEN_DIMENSION, SCREEN_DIMENSION)
+        self.master.maxsize(SCREEN_Width, SCREEN_Height)
         # self.pack(expand=1)
+
         
 class PaintCanvas():
     def __init__(self, GraphicWindow=None):
-        self.canvas = Canvas(GraphicWindow, width=SCREEN_DIMENSION, height=SCREEN_DIMENSION, bg="#000")
+        self.canvas = Canvas(GraphicWindow, width=SCREEN_Width, height=SCREEN_Height, bg="#000")
         self.canvas.pack();
         # self.canvas.create_line(0, 0, 200, 100)
         # self.canvas.create_line(0, 100, 200, 0, fill="red", dash=(4, 4))
         # self.canvas.create_rectangle(50, 25, 150, 75, fill="blue")
+        
     
 
  
@@ -34,6 +40,7 @@ root = Tk.Tk()
 GW = GraphicWindow(master=root)
 PC = PaintCanvas(GraphicWindow=GW)
 GW.mainloop()
+
 
 # from tkinter import Tk, Canvas, PhotoImage, mainloop
 # from math import sin
