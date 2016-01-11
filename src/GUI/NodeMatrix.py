@@ -129,8 +129,10 @@ class SpiderWebb:
             raise ValueError('DirectionWeightVector size incorrect. DirectionWeightVector: ' + str(DirectionWeightVector));
             
 class TestSpiderWebb:
+
     def Test():
       DirectionWeightVector = [0]*8
+      
 Webb = SpiderWebb(5, 5)
 # Webb.Webb[0][0][0] = 3
 # print (Webb.Webb[99][0][0])

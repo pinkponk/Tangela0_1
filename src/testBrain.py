@@ -1,7 +1,7 @@
 '''
 Created on 30 dec. 2015
 
-@author: Henrik
+@author: Henrik, Gustav 
 '''
 from NeuralNetwork.brain import spiderBrainFullyCon
 from GUI.NodeMatrix import SpiderWebb
