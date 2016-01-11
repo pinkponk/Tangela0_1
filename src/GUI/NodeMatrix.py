@@ -110,33 +110,57 @@ class SpiderWebb:
     def CalcNextEndPos(StartPos, DirectionWeightVector):
         index = DirectionWeightVector.index(max(DirectionWeightVector))
         if index == 0:
-            return {'x' : StartPos['x'] - 1, 'y' : StartPos['y'] -1}
+            return {'x' : StartPos['x'] - 1, 'y' : StartPos['y'] - 1}
         elif index == 1:
-            return {'x' : StartPos['x'] - 1, 'y' : StartPos['y'] -1}
+            return {'x' : StartPos['x'], 'y' : StartPos['y'] - 1}
         elif index == 2:
-            return {'x' : StartPos['x'] - 1, 'y' : StartPos['y'] -1}
+            return {'x' : StartPos['x'] + 1, 'y' : StartPos['y'] - 1}
         elif index == 3:
-            return {'x' : StartPos['x'] - 1, 'y' : StartPos['y'] -1}
+            return {'x' : StartPos['x'] + 1, 'y' : StartPos['y']}
         elif index == 4:
-            return {'x' : StartPos['x'] - 1, 'y' : StartPos['y'] -1}
+            return {'x' : StartPos['x'] + 1, 'y' : StartPos['y'] + 1}
         elif index == 5:
-            return {'x' : StartPos['x'] - 1, 'y' : StartPos['y'] -1}
+            return {'x' : StartPos['x'], 'y' : StartPos['y'] + 1}
         elif index == 6:
-            return {'x' : StartPos['x'] - 1, 'y' : StartPos['y'] -1}
+            return {'x' : StartPos['x'] - 1, 'y' : StartPos['y'] + 1}
         elif index == 7:
-            return {'x' : StartPos['x'] - 1, 'y' : StartPos['y'] -1}
+            return {'x' : StartPos['x'] - 1, 'y' : StartPos['y']}
         else:
             raise ValueError('DirectionWeightVector size incorrect. DirectionWeightVector: ' + str(DirectionWeightVector));
             
 class TestSpiderWebb:
 
     def Test():
+      Webb = SpiderWebb(5,5)
+      StartPos = {'x': 0, 'y': 0}
       DirectionWeightVector = [0]*8
+      for n in range(1,8):
+        index = n-1
+        DirectionWeightVector[index] = n
+        EndPos = SpiderWebb.CalcNextEndPos(StartPos, DirectionWeightVector)
+        Xdir = EndPos['x'] - StartPos['x']
+        Ydir = EndPos['y'] - StartPos['y']
+        if(index == 0 or index == 6 or index == 7):
+          if(Xdir != -1):
+            raise ValueError('Invalid output')
+        elif(index == 1 or index == 5):
+          if(Xdir != 0):
+            raise ValueError('Invalid output')
+        elif(index == 2 or index == 3 or index == 4):
+          if(Xdir != 1):
+            raise ValueError('Invalid output')
+        
+        if(index == 0 or index == 1 or index == 2):
+          if(Ydir != -1):
+            raise ValueError('Invalid output')
+        elif(index == 7 or index == 3):
+          if(Ydir != 0):
+            raise ValueError('Invalid output')
+        elif(index == 6 or index == 5 or index == 4):
+          if(Ydir != 1):
+            raise ValueError('Invalid output')
       
-Webb = SpiderWebb(5, 5)
-# Webb.Webb[0][0][0] = 3
-# print (Webb.Webb[99][0][0])
-Webb.InsertSpiderThread({'x':1, 'y':1}, {'x':1, 'y':2})
-Webb.InsertSpiderThread({'x':1, 'y':1}, {'x':1, 'y':1})
-#print (Webb.Webb)
-Webb.ConvertWebbToList();
+      
+      print('All tests succeded!')
+      
+TestSpiderWebb.Test()      
