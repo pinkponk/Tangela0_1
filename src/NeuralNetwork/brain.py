@@ -56,7 +56,8 @@ class spiderBrainFullyCon(object):
         print("whatsup")'''
         
         
-    def crunch(self, inputs):
+    def crunch(self, inputsOriginal):
+        inputs = copy.deepcopy(inputsOriginal)
         if inputs.__len__()==self.layerStruct[0]:
             i = 0
             for layer in self.allLayers:
