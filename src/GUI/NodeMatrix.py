@@ -10,7 +10,7 @@ Created on 8 jan. 2016
 SpiderWebb is a NodeXCount * NodeYCount * 4 matrix 
 Each node has a connection to right up, right, right down, down ( 3 connections).
 
-  0                     n x-dir
+ 0_ _ _ _ _ _ _ _ _ _ _ _n x-dir
 0|_|_|_|_|_|_|_|_|_|_|_|_|
  |_|_|_|_|_|_|_|_|_|_|_|_|
  |_|_|_|_|_|_|_|_|_|_|_|_|
@@ -129,7 +129,9 @@ class SpiderWebb:
             raise ValueError('DirectionWeightVector size incorrect. DirectionWeightVector: ' + str(DirectionWeightVector));
             
 class TestSpiderWebb:
-
+    '''
+    Test SpiderWebb
+    '''
     def Test():
       Webb = SpiderWebb(5,5)
       StartPos = {'x': 0, 'y': 0}
