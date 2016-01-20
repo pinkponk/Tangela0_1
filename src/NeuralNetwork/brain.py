@@ -39,7 +39,9 @@ class BrainFullyCon(object):
         '''
         
         self.allLayers = []
+        self.weightVector = []
         self.layerStruct = layerStruct
+        
         for layerIndex in range(0,self.layerStruct.__len__()):
             self.allLayers.append([])
             
@@ -146,7 +148,14 @@ class BrainFullyCon(object):
                     percept.k[index-1] = (random.random()*2+-1)
         
     
-    
+    def updateWeightVector(self):
+        self.weightVector = []
+        for layer in self.allLayers:
+            for percept in layer:
+                self.weightVector.append(percept.b)
+                self.weightVector.extend(percept.k)
+                
+        
     def visualizeActivation(self):
         d = 0
         uhcouevh = 0

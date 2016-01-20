@@ -2,6 +2,12 @@
 Created on 10 jan. 2016
 
 @author: Henrik
+Things to think about
+ha alla vikter som en matris men vad händer med bias?
+Oavsätt antal lager så är den altid linear
+
+
+
 '''
 
 import copy
