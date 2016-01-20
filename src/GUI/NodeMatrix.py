@@ -1,13 +1,13 @@
 #!/usr/bin/env python
+import math
 import numpy as np
-
 '''
 Created on 8 jan. 2016
 
 @author: Gustav
 
 
-SpiderWebb is a NodeXCount * NodeYCount * 4 matrix 
+SpiderWebb is a NodeYCount * NodeXCount * 4 matrix 
 Each node has a connection to right up, right, right down, down ( 3 connections).
 
  0_ _ _ _ _ _ _ _ _ _ _ _n x-dir
@@ -31,7 +31,7 @@ class SpiderWebb:
     def __init__(self, NodeXCount, NodeYCount):
         self.NodeXCount = NodeXCount;
         self.NodeYCount = NodeYCount;
-        self.Webb = np.zeros((NodeXCount, NodeYCount, 4));
+        self.Webb = np.zeros((NodeYCount, NodeXCount, 4));
     
     '''
     InsertSpiderThread
@@ -62,33 +62,38 @@ class SpiderWebb:
             print(str(e))
             print('Insert had no effect.')
             return StartPos;
-          # self.Webb
           
     def __insert_spider_thread(self, StartPos, EndPos):
         x_dir = EndPos['x'] - StartPos['x'];
         y_dir = EndPos['y'] - StartPos['y'];
         if(x_dir > 0):
             if(y_dir < 0):
-                self.Webb[StartPos['x']][StartPos['y']][SpiderWebb.rightup] = 1;
+                self.Webb[StartPos['y']][StartPos['x']][SpiderWebb.rightup] = 1;
             elif(y_dir == 0):
-                self.Webb[StartPos['x']][StartPos['y']][SpiderWebb.right] = 1;
+                self.Webb[StartPos['y']][StartPos['x']][SpiderWebb.right] = 1;
             else:
-                self.Webb[StartPos['x']][StartPos['y']][SpiderWebb.rightdown] = 1;
+                self.Webb[StartPos['y']][StartPos['x']][SpiderWebb.rightdown] = 1;
         elif(x_dir == 0):
             if(y_dir < 0):
-                self.Webb[EndPos['x']][EndPos['y']][SpiderWebb.down] = 1;
+                self.Webb[EndPos['y']][EndPos['x']][SpiderWebb.down] = 1;
             elif(y_dir == 0):
                 raise ValueError('Same index of nodes.');
             else:
-                self.Webb[StartPos['x']][StartPos['y']][SpiderWebb.down] = 1;
+                self.Webb[StartPos['y']][StartPos['x']][SpiderWebb.down] = 1;
         else:
             if(y_dir < 0):
-                self.Webb[EndPos['x']][EndPos['y']][SpiderWebb.rightdown] = 1;
+                self.Webb[EndPos['y']][EndPos['x']][SpiderWebb.rightdown] = 1;
             elif(y_dir == 0):
-                self.Webb[EndPos['x']][EndPos['y']][SpiderWebb.right] = 1;
+                self.Webb[EndPos['y']][EndPos['x']][SpiderWebb.right] = 1;
             else:
-                self.Webb[EndPos['x']][EndPos['y']][SpiderWebb.rightup] = 1;
-
+                self.Webb[EndPos['y']][EndPos['x']][SpiderWebb.rightup] = 1;     
+    
+    def IsNodeConnected(WebbNode):
+        if(WebbNode[0] == 1 or WebbNode[1] == 1 or WebbNode[2] == 1 or WebbNode[3] == 1):
+            return True
+        else:
+            return False
+    
     def ConvertWebbToList(self):
         WebbList = [];
         for yrow in self.Webb:
@@ -96,7 +101,106 @@ class SpiderWebb:
                 for connection in connections:
                     WebbList.append(connection)
         return WebbList;
+
+    '''
+    Webb patterns used for testing
+    '''
+    def CreateSquarePattern(self):
+        TopLeftCorner = {'x' : math.floor(self.NodeXCount/4), 'y' : math.floor(self.NodeYCount/4)};
+        BottomLeftCorner = {'x' : math.floor(self.NodeXCount/4), 'y' : math.floor(self.NodeYCount*3/4)}
+        BottomRightCorner = {'x' : math.floor(self.NodeXCount*3/4), 'y' : math.floor(self.NodeYCount*3/4)}
+        TopRightCorner = {'x' : math.floor(self.NodeXCount*3/4), 'y' : math.floor(self.NodeYCount/4)}
+
+        YLength = BottomLeftCorner['y'] - TopLeftCorner['y']        
+        Xlength = TopRightCorner['x'] - TopLeftCorner['x']
+        
+        '''Insert top line'''
+        for col in range(0, Xlength):
+            StartPos = {'x': TopLeftCorner['x'] + col, 'y': TopLeftCorner['y']}
+            EndPos = {'x': TopLeftCorner['x'] + col + 1, 'y': TopLeftCorner['y']}
+            self.InsertSpiderThread(StartPos, EndPos)
+        '''Insert bottom line'''
+        for col in range(0, Xlength):
+            StartPos = {'x': BottomLeftCorner['x'] + col, 'y': BottomLeftCorner['y']}
+            EndPos = {'x': BottomLeftCorner['x'] + col + 1, 'y': BottomLeftCorner['y']}
+            self.InsertSpiderThread(StartPos, EndPos)
+        '''Insert Left vertical line'''
+        for row in range(0, YLength):
+            StartPos = {'x': TopLeftCorner['x'], 'y': TopLeftCorner['y']+ row}
+            EndPos = {'x': TopLeftCorner['x'], 'y': TopLeftCorner['y']+ row + 1}
+            self.InsertSpiderThread(StartPos, EndPos)
+        '''Insert Right vertical line'''
+        for row in range(0, YLength):
+            StartPos = {'x': TopRightCorner['x'], 'y': TopRightCorner['y']+ row}
+            EndPos = {'x': TopRightCorner['x'], 'y': TopRightCorner['y']+ row + 1}
+            self.InsertSpiderThread(StartPos, EndPos)
     
+    '''Requires the webb to be square'''
+    def CreateCrossPattern(self):
+        if(self.NodeXCount == self.NodeYCount):
+            TopLeftCorner = {'x' : math.floor(self.NodeXCount/4), 'y' : math.floor(self.NodeYCount/4)};
+            BottomLeftCorner = {'x' : math.floor(self.NodeXCount/4), 'y' : math.floor(self.NodeYCount*3/4)}
+            BottomRightCorner = {'x' : math.floor(self.NodeXCount*3/4), 'y' : math.floor(self.NodeYCount*3/4)}
+            TopRightCorner = {'x' : math.floor(self.NodeXCount*3/4), 'y' : math.floor(self.NodeYCount/4)} 
+            
+            YLength = BottomLeftCorner['y'] - TopLeftCorner['y']
+            '''TopLeft to botton right'''
+            for i in range(0,YLength):
+                StartPos = {'x' : TopLeftCorner['x'] + i, 'y' : TopLeftCorner['y'] + i}
+                EndPos = {'x' : TopLeftCorner['x'] + i + 1, 'y' : TopLeftCorner['y'] + i + 1}    
+                self.InsertSpiderThread(StartPos, EndPos)
+            '''BottomLeft to top right'''
+            for i in range(0, YLength):
+                StartPos = {'x' : BottomLeftCorner['x'] + i, 'y' : BottomLeftCorner['y'] - i}
+                EndPos = {'x' : BottomLeftCorner['x'] + i + 1, 'y' : BottomLeftCorner['y'] - i - 1}
+                self.InsertSpiderThread(StartPos, EndPos)
+                
+    
+    def CreateCirclePattern(self, RadiusRatio):
+        Top = {'x' : math.floor(self.NodeXCount/2), 'y': math.floor((self.NodeYCount/2)*(1-RadiusRatio))}
+        Bottom = {'x': math.floor(self.NodeXCount/2), 'y': math.floor((self.NodeYCount/2)*(1-RadiusRatio))}
+        Left = {'x': math.floor((self.NodeXCount*1/2)*(1-RadiusRatio)), 'y': math.floor(self.NodeYCount*1/2)}
+        Right = {'x': math.floor((self.NodeXCount*1/2)*(1+RadiusRatio)), 'y': math.floor(self.NodeYCount*1/2)}
+        
+        
+        YLength = Bottom['y'] - Top['y']        
+        Xlength = Right['x'] - Left['x']
+        
+        Center = {'x': math.floor(self.NodeXCount/2), 'y': math.floor(self.NodeYCount/2)}
+        
+        '''Left top quarter'''
+        '''x-dir = y-dir, y-dir = -x-dir'''
+        StartPos = Left
+        Stop = False
+        while(StartPos['x'] != Top['x'] and StartPos['y']!=Top['y']):
+            Dir = {'x': -(StartPos['y']-Center['y']), 'y': -(StartPos['x']-Center['x'])}
+            length = math.sqrt(Dir['x']*Dir['x'] + Dir['y']*Dir['y'])
+            Dir['x'] = Dir['x']/length
+            Dir['y'] = Dir['y']/length
+            Diag = {'x': math.sqrt(1/2),'y': -math.sqrt(1/2)}
+            Diagscalar = Dir['x']*Diag['x'] + Dir['y']*Diag['y']
+            deltaY = abs(Dir['y'])
+            deltaX = abs(Dir['x'])
+            deltaD = abs(Diagscalar)
+            print('deltaY: ' + str(deltaY))
+            print('deltaX: ' + str(deltaX))
+            print('deltaD: ' + str(deltaD))
+            if(deltaY > deltaX):
+                if(deltaY > deltaD):
+                    self.InsertSpiderThread(StartPos, {'x': StartPos['x'], 'y': StartPos['y'] - 1})
+                    StartPos['y'] = StartPos['y'] - 1
+                else:
+                    self.InsertSpiderThread(StartPos, {'x': StartPos['x'] + 1, 'y': StartPos['y'] - 1})
+                    StartPos['y'] = StartPos['y'] - 1
+                    StartPos['x'] = StartPos['x'] + 1
+            else:
+                if(deltaX > deltaD):
+                    self.InsertSpiderThread(StartPos, {'x': StartPos['x'] + 1, 'y': StartPos['y']})
+                    StartPos['x'] = StartPos['x'] + 1
+                else:
+                    self.InsertSpiderThread(StartPos, {'x': StartPos['x'] + 1, 'y': StartPos['y'] - 1})
+                    StartPos['y'] = StartPos['y'] - 1
+                    StartPos['x'] = StartPos['x'] + 1
     '''
     input:  StartPos - {'x': n, 'y': h}
             DirectionWeightVector - [0.1, 0.3, 0.4, 0.12, 0.5, 0.9, 0.01]
@@ -162,6 +266,7 @@ class TestSpiderWebb:
           if(Ydir != 1):
             raise ValueError('Invalid output')
       
+      Webb.CreateSquarePattern()
       
       print('All tests succeded!')
       
