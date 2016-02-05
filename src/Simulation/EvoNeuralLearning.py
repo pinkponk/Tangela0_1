@@ -159,7 +159,7 @@ class EvoNeuralLearning(object):
         tempTopScoreSpecies = []
         
         for specie in self.species:
-            tempTopScoreSpecies.append([spec,spec.creatures[0].fitness])
+            tempTopScoreSpecies.append([specie,specie.creatures[0].fitness])
             sigma = self.calcSigma(1-popToKeepProcent,specie.creatures.__len__())
             i = 0
             creaturesToKeep = []
@@ -192,44 +192,93 @@ class EvoNeuralLearning(object):
         
         
             
-
+                
+                
+    def chooseParentRoulette(self,listOfSelectable):
+        '''Selects a parent based on the roulette tactic with fitness as weight'''
+        
+        #Create roulette
+        listOfSelectable = sorted(listOfSelectable, key=lambda creature: creature.fitness).reverse()
+        globalMaxFitness = listOfSelectable[0].fitness
+        multiplier = 1000/globalMaxFitness          #will ensure good resolution
+        roulette = []
+        intervalInc = 0
+        for creature in listOfSelectable:
+            intervalInc = math.ceil(intervalInc + creature.fitness*multiplier)
+            roulette.append([creature,intervalInc])
+        
+        #randomly selects a index within the overall interval
+        index = random.randrange(0,math.ceil(intervalInc+1),1)
+        
+        #Finds the corresponding creature for that index
+        n = 0
+        while index > roulette[n][1]:
+            n = n+1
+            
+        return roulette[n][0]
+    
     def reProduce(self, crossoverType=1):
         '''First finds two parents by randomly selecting two numbers then depending which intervals
         these numbers the appropriate parents are chosen. Each potential parent has its own interval
         which has its size proportional to its fitness.(roulette-version)'''
         
         
-        #Create roulette
-        self.ranking()                  #Re-ranks the list of creatures, just in case
-        globalMaxFitness = self.creatures[0].fitness
-        multiplier = 1000/globalMaxFitness          #will ensure good resolution
-        roulette = []
-        intervalInc = 0
-        for creature in self.creatures:
-            intervalInc = math.ceil(intervalInc + creature.fitness*multiplier)
-            roulette.append([creature,intervalInc])
-
-        
         #Chose parents
         newChildren = []
+        self.ranking()                  #Re-ranks the list of creatures, just in case
+
         
-        for k in range(0,self.nrOfCreatures-self.creatures.__len__()-self.eliteCreatures):
-            #k children must be produced
+        #Will loop until target nr of creatures are refilled
+        while (0<=self.nrOfCreatures-self.creatures.__len__()-self.eliteCreatures-newChildren):
+            
+            #======================================================
+            #Randomly choose a species, low population species are more likely to be chosen
+            specToBreed = None
+            #Create roulette
+            
+            #Lowest length species first
+            speciesLengthRanking = sorted(self.species,key=lambda spec: spec.__len__())
+            done = 0
+            i = 0
+            while done ==0:
+                if random.random()>0.5:
+                    break
+                i = i + 1
+            specToBreed = speciesLengthRanking[i%speciesLengthRanking.__len__()]
+            #========================================================
+            #Breed that species
             parents = []
-            runAgain = 1
-            while runAgain == 1:
+            
+            if specToBreed.creatures.__len__()<1:
+                print("EMPTY SPECES, SHOULD NOT BE POSSIBLE")
+            elif specToBreed.creatures.__len__()==1:
+                #This species has only one creature or less, later the elitism will be added but
+                #this lone creature has no one to breed with so it takes one from another species
+                parents[0] = specToBreed.creatures[0]
+                topCreatures = []
+                for spec in self.species:
+                    if spec is not specToBreed:
+                        topCreatures.append(spec.creatures[0])
+                parents[0] = self.chooseParentRoulette(topCreatures)
                 
-                index = random.randrange(0,math.ceil(intervalInc+1),1)
-                
-                n = 0
-                while index > roulette[n][1]:
-                    n = n+1
-                
-                if parents.__len__()==0:
-                    parents.append(roulette[n][0])
-                elif parents[0]!=roulette[n][0]:
-                        parents.append(roulette[n][0])
-                        runAgain = 0
+            elif random.random()<0.02:
+                #This species has more than one creature, can breed within species but
+                #a small chance made it so on creature from this species will breed with a creature
+                #from another species
+                parents[0] = self.chooseParentRoulette(specToBreed.creatures)
+                topCreatures = []
+                for spec in self.species:
+                    if spec is not specToBreed:
+                        topCreatures.append(spec.creatures[0])
+                parents[0] = self.chooseParentRoulette(topCreatures)
+                    
+            else:
+                #Normal breeding within this species
+                parents[0] = self.chooseParentRoulette(specToBreed.creatures)
+                parents[1] = None
+                while parents[0] is not parents[1]:
+                    parents[1] = self.chooseParentRoulette(specToBreed.creatures)
+            
             if parents.__len__()!=2:
                 print("WARNING: NOT 2 PARENTS")
                 
@@ -237,18 +286,39 @@ class EvoNeuralLearning(object):
         
         self.creatures.extend(newChildren)
         
+        if self.creatures.__len__() is not self.nrOfCreatures:
+            print("REPRODUCTION DID NOT BALANCE TO RIGHT NR OF CREATURES!")
+            print("Nr=",self.creatures.__len__())
+        
         
     def createChildNeuronCrossover(self,parents):
         child = Creature(self.brainStruct,self.creatureIDCounter)
         self.creatureIDCounter = self.creatureIDCounter+1
         
-        
-        
-
+        for layerIndex in range(0,self.brainStruct.__len__()):
+                for neuronIndex in range(0,self.brainStruct[layerIndex]):
+                    if random.random()>0.5:
+                        child.brain.allLayers[layerIndex][neuronIndex].b = parents[0].brain.allLayers[layerIndex][neuronIndex].b
+                        child.brain.allLayers[layerIndex][neuronIndex].k = copy.deepcopy(parents[0].brain.allLayers[layerIndex][neuronIndex].k)
+                    else:
+                        child.brain.allLayers[layerIndex][neuronIndex].b = parents[1].brain.allLayers[layerIndex][neuronIndex].b
+                        child.brain.allLayers[layerIndex][neuronIndex].k = copy.deepcopy(parents[1].brain.allLayers[layerIndex][neuronIndex].k)
         return child
 
-    def mutate(self):
-        a=0
+    def mutate(self, howManyProcentage):
+        for creature in self.creatures:
+            for layerIndex in range(0,self.brainStruct.__len__()):
+                for neuronIndex in range(0,self.brainStruct[layerIndex]):
+                    if random.random()<howManyProcentage:
+                        tempb = creature.brain.allLayers[layerIndex][neuronIndex].b
+                        temp = tempb**2+2*random.random()-1
+                        creature.brain.allLayers[layerIndex][neuronIndex].b = math.copysign(temp**0.5, tempb)
+                    for kIndex in range(0,creature.brain.allLayers[layerIndex][neuronIndex].k.__len__()):
+                        if random.random()<howManyProcentage:
+                            tempk = creature.brain.allLayers[layerIndex][neuronIndex].k[kIndex]
+                            temp = tempk**2+2*random.random()-1
+                            creature.brain.allLayers[layerIndex][neuronIndex].k[kIndex] = math.copysign(temp**0.5, tempk)
+
     def speciesCategorization(self):
         '''Categorize all the creatures into a target number of species by comparing the angle
         between the genome (all he weights in one long vector) with the help of the dot product'''
