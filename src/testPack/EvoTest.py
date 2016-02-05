@@ -235,7 +235,7 @@ class EvoTest(object):
                 for neuronIndex in range(0,self.brainStruct[layerIndex]):
                     spiderChild.brain.allLayers[layerIndex][neuronIndex].b = spiderParents[0].brain.allLayers[layerIndex][neuronIndex].b
                     spiderChild.brain.allLayers[layerIndex][neuronIndex].k = copy.deepcopy(spiderParents[0].brain.allLayers[layerIndex][neuronIndex].k)
-                else:
+                else:  #WTF DOES THIS ELSE ?!?!?
                     spiderChild.brain.allLayers[layerIndex][neuronIndex].b = spiderParents[1].brain.allLayers[layerIndex][neuronIndex].b
                     spiderChild.brain.allLayers[layerIndex][neuronIndex].k = copy.deepcopy(spiderParents[1].brain.allLayers[layerIndex][neuronIndex].k)
             self.spiderChildren.append(spiderChild)
