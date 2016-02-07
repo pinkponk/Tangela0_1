@@ -21,6 +21,11 @@ class EvoNeuralLearning(object):
     4) Kill off
     5) Elitism and Diversity retantion
     6) Reproduce
+
+    TO DO
+    1)correlation jump, all katekorized to new species...
+
+
     '''
 
 
@@ -29,16 +34,20 @@ class EvoNeuralLearning(object):
         Constructor
         '''
         self.brainStruct = [20,10,10,1]
-        self.nrOfCreatures = 40
+        self.nrOfCreatures = 30
         self.targetNrOfSpecies = 3
         self.populationToKeep = 0.5
         self.elitismPercentage = 0.05
+        self.mutationChance = 0.05
+        self.lowScoreSpeciesRemovalChance = 0.05
+        self.shouldDeleteLowScoreSpecies = False
         
         self.species = []                               #A list containing all the current classified species
         self.creatures = []
         self.eliteCreatures = []                          #These will at the end of cycle be the new creatures
         self.speciesCorrelationMargin = 0               #If the correlation of a creature is over the margin then that creature is categorized to that species
         self.creatureIDCounter = 0
+        self.speciesEverExisted = 0
         
         file = open("Animal-words.txt")
         self.animalNames = file.readlines()
@@ -69,9 +78,14 @@ class EvoNeuralLearning(object):
         
         self.simulate()
         self.ranking()
-        self.killOffPerSpecies(self.populationToKeep)
         self.elitismAndDiversitySustainabilty(self.elitismPercentage)
+        
+        self.multipleSpeciesForSameCreatureTest(self.creatures)
+        self.multipleSpeciesForSameCreatureTest(self.eliteCreatures)
+        
+        self.killOffPerSpecies(self.populationToKeep)
         self.reProduce(1)
+        self.mutate(self.mutationChance)
         self.speciesCategorization(self.creatures)
 
         
@@ -169,15 +183,17 @@ class EvoNeuralLearning(object):
             specie.creatures = creaturesToKeep      #NEED DEEP COPY(will loose performance)? ASK GUSTAV
             
         
-        if self.species.__len__()>self.targetNrOfSpecies:
-            '''The worst species (the species top creature as benchmark) at the top of list'''    
-            tempTopScoreSpecies = sorted(tempTopScoreSpecies, key=lambda tempTopScoreSpecies: tempTopScoreSpecies[1])
-            '''Should I delete this species?'''
-            #Testing with delete bad species if too many
-            for creature in tempTopScoreSpecies[0][0].creatures:
-                self.creatures.remove(creature)
-            self.species.remove(tempTopScoreSpecies[0][0])
-            
+        if self.shouldDeleteLowScoreSpecies == True:
+            if self.species.__len__()>self.targetNrOfSpecies and random.random()< self.lowScoreSpeciesRemovalChance:
+                '''The worst species (the species top creature as benchmark) at the top of list'''    
+                tempTopScoreSpecies = sorted(tempTopScoreSpecies, key=lambda tempTopScoreSpecies: tempTopScoreSpecies[1])
+                '''Should I delete this species?'''
+                #Testing with delete bad species if too many
+                print(tempTopScoreSpecies[0][0].name," removed because low score")
+                for creature in tempTopScoreSpecies[0][0].creatures:
+                    self.creatures.remove(creature)
+                self.species.remove(tempTopScoreSpecies[0][0])
+                
             
         
         self.creatures = tempCreatures              #Refreshes the list of creatures
@@ -190,6 +206,7 @@ class EvoNeuralLearning(object):
         One creature from each species will always be protected/copied if percentage!=0
         The percentage is based on the current number of creatures not the original total amount'''
         
+        self.eliteCreatures = []
         self.ranking()                  #Re-ranks the list of creatures, just in case
         for spec in self.species:
             for n in range(0,math.ceil(procentageToSafeKeep*spec.creatures.__len__())):
@@ -207,6 +224,8 @@ class EvoNeuralLearning(object):
         listOfSelectable = sorted(listOfSelectable, key=lambda creature: creature.fitness)
         listOfSelectable.reverse()
         globalMaxFitness = listOfSelectable[0].fitness
+        if globalMaxFitness == 0:
+            print("ERROR WITH Creature: ",listOfSelectable[0].ID, ", is currently belonging to ", self.findCurrentCorrespondingSpeciesName(listOfSelectable[0]))
         multiplier = 1000/globalMaxFitness          #will ensure good resolution
         roulette = []
         intervalInc = 0
@@ -224,16 +243,27 @@ class EvoNeuralLearning(object):
             
         return roulette[n][0]
     
+    def removeEmptySpecies(self):
+        '''Clear all the empty species'''
+        removeThese = []
+        for spec in self.species:
+            if spec.creatures.__len__()==0:
+                ''' Remove species if no creature is classified to it anymore '''
+                print(spec.name," removed! no one left")
+                removeThese.append(spec)
+                
+        for spec in removeThese:
+            self.species.remove(spec)
+    
     def reProduce(self, crossoverType=1):
         '''First finds two parents by randomly selecting two numbers then depending which intervals
         these numbers the appropriate parents are chosen. Each potential parent has its own interval
         which has its size proportional to its fitness.(roulette-version)'''
         
-        elitismCreatures = copy.deepcopy(self.eliteCreatures)
+        elitismCreatures = copy.deepcopy(self.eliteCreatures)   #DO I NEED DEEP COPY?
         self.creatures.extend(elitismCreatures)
         self.speciesCategorization(elitismCreatures)
-        ''' THESE NEEDS NEW IDs'''
-        self.eliteCreatures = []
+        self.removeEmptySpecies()
         
         #Chose parents
         newChildren = []
@@ -246,6 +276,7 @@ class EvoNeuralLearning(object):
             #======================================================
             #Randomly choose a species, low population species are more likely to be chosen
             specToBreed = None
+            skip = 0
             #Create roulette
             
             #Lowest length species first
@@ -270,14 +301,16 @@ class EvoNeuralLearning(object):
 
                 if self.species.__len__()<2:
                     print("LESS THAN TWO SPECIES EXISTS! CANNOT FIND SECOND PARENT")
-                    
-                parents[0] = specToBreed.creatures[0]
-                topCreatures = []
-                for spec in self.species:
-                    if spec is not specToBreed:
-                        topCreatures.append(spec.creatures[0])
-                parents[1] = self.chooseParentRoulette(topCreatures)
-                print("TWO SPECIES MATED!")
+                    skip = 1
+                else:
+                    '''Does not reproduce this way if only 1 species left'''
+                    parents[0] = specToBreed.creatures[0]
+                    topCreatures = []
+                    for spec in self.species:
+                        if spec is not specToBreed:
+                            topCreatures.append(spec.creatures[0])
+                    parents[1] = self.chooseParentRoulette(topCreatures)
+                    print("TWO SPECIES MATED!")
                 
             elif random.random()<0.02:
                 #This species has more than one creature, can breed within species but
@@ -285,14 +318,16 @@ class EvoNeuralLearning(object):
                 #from another species
                 if self.species.__len__()<2:
                     print("LESS THAN TWO SPECIES EXISTS! CANNOT FIND SECOND PARENT")
-                
-                parents[0] = self.chooseParentRoulette(specToBreed.creatures)
-                topCreatures = []
-                for spec in self.species:
-                    if spec is not specToBreed:
-                        topCreatures.append(spec.creatures[0])
-                parents[1] = self.chooseParentRoulette(topCreatures)
-                print("TWO SPECIES MATED!")
+                    skip = 1
+                else:
+                    '''Does not reproduce this way if only 1 species left'''
+                    parents[0] = self.chooseParentRoulette(specToBreed.creatures)
+                    topCreatures = []
+                    for spec in self.species:
+                        if spec is not specToBreed:
+                            topCreatures.append(spec.creatures[0])
+                    parents[1] = self.chooseParentRoulette(topCreatures)
+                    print("TWO SPECIES MATED!")
                     
             else:
                 #Normal breeding within this species
@@ -307,7 +342,7 @@ class EvoNeuralLearning(object):
                 print("One or Both of parents is None")
                 
             
-            if crossoverType == 1:
+            if crossoverType == 1 and skip is not 1:
                 newChildren.append(self.createChildNeuronCrossover(parents))
         
         self.creatures.extend(newChildren)
@@ -334,18 +369,20 @@ class EvoNeuralLearning(object):
         return child
 
     def mutate(self, howManyProcentage):
+        '''Changes the weights by little of already big and by a lot if small, sqrt is used for that'''
         for creature in self.creatures:
-            for layerIndex in range(0,self.brainStruct.__len__()):
-                for neuronIndex in range(0,self.brainStruct[layerIndex]):
-                    if random.random()<howManyProcentage:
-                        tempb = creature.brain.allLayers[layerIndex][neuronIndex].b
-                        temp = tempb**2+2*random.random()-1
-                        creature.brain.allLayers[layerIndex][neuronIndex].b = math.copysign(temp**0.5, tempb)
-                    for kIndex in range(0,creature.brain.allLayers[layerIndex][neuronIndex].k.__len__()):
+            if not self.eliteCreatures.__contains__(creature):
+                for layerIndex in range(0,self.brainStruct.__len__()):
+                    for neuronIndex in range(0,self.brainStruct[layerIndex]):
                         if random.random()<howManyProcentage:
-                            tempk = creature.brain.allLayers[layerIndex][neuronIndex].k[kIndex]
-                            temp = tempk**2+2*random.random()-1
-                            creature.brain.allLayers[layerIndex][neuronIndex].k[kIndex] = math.copysign(temp**0.5, tempk)
+                            tempb = creature.brain.allLayers[layerIndex][neuronIndex].b
+                            temp = abs(tempb**2+2*random.random()-1)
+                            creature.brain.allLayers[layerIndex][neuronIndex].b = math.copysign(temp**0.5, tempb)
+                        for kIndex in range(0,creature.brain.allLayers[layerIndex][neuronIndex].k.__len__()):
+                            if random.random()<howManyProcentage:
+                                tempk = creature.brain.allLayers[layerIndex][neuronIndex].k[kIndex]
+                                temp = abs(tempk**2+2*random.random()-1)
+                                creature.brain.allLayers[layerIndex][neuronIndex].k[kIndex] = math.copysign(temp**0.5, tempk)
 
     def speciesCategorization(self, creatureVector):
         '''Categorize all the creatures into a target number of species by comparing the angle
@@ -362,12 +399,13 @@ class EvoNeuralLearning(object):
                 self.species.append(Species(copy.deepcopy(weightVector),self.determaineSpeciesName()))
                 self.species[0].creatures.append(creature)
                 initMargin = 1
+                self.speciesEverExisted = self.speciesEverExisted+1
             else:
                 correlation = []
                 for spec in self.species:
                     '''Check the correlation with all the known species'''
-                    correlation.append(spec.compareWeightVector(weightVector))
-                correlationSorted = sorted(correlation)
+                    correlation.append([spec, spec.compareWeightVector(weightVector)])
+                correlationSorted = sorted(correlation, key=lambda correlation: correlation[1])
                 correlationSorted.reverse()
                 ''' Highest correlation on top'''
                 
@@ -375,14 +413,13 @@ class EvoNeuralLearning(object):
                 '''Create  first guess of what the margin could be, some oscillations could occur 
                 before converged to good value'''
                 if initMargin == 1:
-                    self.speciesCorrelationMargin = correlationSorted[0]
+                    self.speciesCorrelationMargin = correlationSorted[0][1]
                     initMargin = 0
                      
-                if self.speciesCorrelationMargin <= correlationSorted[0]:
+                if self.speciesCorrelationMargin <= correlationSorted[0][1]:
                     #print("Margin:",self.speciesCorrelationMargin,"   curr correlation:",correlationSorted[0])
                     ''' Close enough to be part of that species '''
-                    indexOfSpecies = correlation.index(correlationSorted[0])
-                    specBelong = self.species[indexOfSpecies]
+                    specBelong = correlationSorted[0][0]
                     
                     '''Delete any duplicate creature if not already in correct species and if 
                     new species classification, assign creature new species'''
@@ -393,28 +430,23 @@ class EvoNeuralLearning(object):
                             specBelong.creatures.append(creature)
                         
                     if self.species.__len__()<self.targetNrOfSpecies:
-                        self.speciesCorrelationMargin = self.speciesCorrelationMargin*1.05
+                        self.speciesCorrelationMargin = self.speciesCorrelationMargin*1.1
+                    #else:
+                     #   self.speciesCorrelationMargin = self.speciesCorrelationMargin*1.00001
 
                 else:
                     ''' Creature has a enough different genome to create a new species '''
                     print("New species Created")
                     newSpecies = Species(copy.deepcopy(weightVector),self.determaineSpeciesName())
+                    self.speciesEverExisted = self.speciesEverExisted+1
                     self.species.append(newSpecies)
                     newSpecies.creatures.append(creature)
                     
                     if self.species.__len__()>self.targetNrOfSpecies:
-                        self.speciesCorrelationMargin = self.speciesCorrelationMargin*0.8
+                        self.speciesCorrelationMargin = self.speciesCorrelationMargin*0.9
                     
 
-                
-                
-        '''Clear all the empty species'''
-        for spec in self.species:
-            if spec.creatures.__len__()==0:
-                ''' Remove species if no creature is classified to it anymore '''
-                print(spec.name," removed!")
-                self.species.remove(spec)
-    
+        self.removeEmptySpecies()
     
     def findCurrentCorrespondingSpeciesName(self,creature):
         for spec in self.species:
@@ -432,12 +464,41 @@ class EvoNeuralLearning(object):
     def printStatus(self):
         for i in range(0,self.creatures.__len__()):
             print(i,": Fitness:",round(self.creatures[i].fitness,4),"\tID=",self.creatures[i].ID,  "Species=",self.findCurrentCorrespondingSpeciesName(self.creatures[i]))
+        print("Alive species:")
+        for spec in self.species:
+            print(spec.name, ", Nr of creatures: ",spec.creatures.__len__())
         print("Nr of Species", self.species.__len__())
+        print("New species margin:" , self.speciesCorrelationMargin)
+        print("Nr of species ever existed: ",self.speciesEverExisted)
+        print("correlation Between Species Num: (the higher, the more diverse)", abs(self.correlationTestBetweenAllCreatures()))
+        
 
     def cloneCreature(self, creature):
         clonedCreature = self.createNewCreature()
         clonedCreature.brain.copyBrainWeights(creature.brain.allLayers)
+        clonedCreature.fitness = creature.fitness
         return clonedCreature
+    
+    def multipleSpeciesForSameCreatureTest(self,creatureList):
+        for creature in creatureList:
+            for spec in self.species:
+                i = 0
+                if spec.creatures.__contains__(creature):
+                    i=i+1
+                if i>1:
+                    print(creature," is in multiple species, ERROR!")
+                    
+    def correlationTestBetweenAllCreatures(self):
+        correlationNum = 0
+        '''copying self.species and removing elements will remove them in both lists! major error'''
+        '''This function takes a LOOOT of time, will slow down the process!'''
+        
+        '''SOETHING AINT RIGHT WITH THIS?'''
+        for creature1 in self.creatures:
+            for creature2 in self.creatures:
+                if creature1 is not creature2:
+                    correlationNum = correlationNum + creature1.compareWeightVector(creature2.createWeightVector())
+        return math.log10(correlationNum/(math.factorial(self.creatures.__len__())))
         
 class Species():
     
@@ -491,11 +552,20 @@ class Creature():
                         #weightVector.extend(copy.deepcopy(self.brain.allLayers[layerIndex][neuronIndex].k))
                         
         return weightVector
+    
+    def compareWeightVector(self,creatureVector):
+        dotProductValue = numpy.dot(creatureVector,self.createWeightVector())
+        normProductValue = numpy.linalg.norm(creatureVector)*numpy.linalg.norm(self.createWeightVector())
+        correlation = dotProductValue/normProductValue
+        correlation = (correlation+1)/2     #Normalizing the correlation to be in between 0 and 1
+        
+        '''The correlation ranges from 0: meaning totally different to 1: same direction in vector space'''
+        return correlation
 
         
         
 eveLearning = EvoNeuralLearning()
-for i in range(0,1000):
+for i in range(0,10000):
     print("Gen Nr: ",i)
     eveLearning.runGeneration()
     eveLearning.printStatus()
